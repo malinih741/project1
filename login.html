@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #008080;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            text-align: center;
+        }
+        .login-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        p {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #27ae60;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2ecc71;
+        }
+        .guest-btn {
+            background-color: #3498db;
+        }
+        .guest-btn:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>Welcome to mindmarvel!</h2>
+        <p> Enter a nickname to start.</p>
+        <input type="text" id="username" placeholder="Enter nickname" required>
+        <button onclick="login()">Start Game</button>
+        <button class="guest-btn" onclick="guestLogin()">Play as Guest</button>
+    </div>
+
+    <script>
+        function login() {
+            let username = document.getElementById("username").value.trim();
+            if (username === "" || username.length < 3) {
+                alert("Username must be at least 3 characters long!");
+            } else {
+                localStorage.setItem("username", username); 
+                window.location.href = "home.html";
+            }
+        }
+
+        function guestLogin() {
+            localStorage.setItem("username", "Guest"); 
+            window.location.href = "home.html";
+        }
+    </script>
+
+</body>
+</html>

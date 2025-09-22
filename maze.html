@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forest Maze Game</title>
+    <style>
+        body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: "Arial", sans-serif;
+    background: url('https://m.media-amazon.com/images/I/61wf4619t0L._SY679_.jpg') no-repeat center center/cover;
+}
+
+        #mazeContainer {
+            position: relative;
+            width: 600vw;
+            height: 600vh;
+        }
+
+        canvas {
+            border: 6px solid #654321;
+            background-color: #2E8B57;
+            width: 100%;
+            height: 100%;
+        }
+        
+        @media(max-width:768px){
+          #mazeContainer{
+            width:80vw;
+            height:80vw;
+          }
+        }
+        #controlPanel {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        #startBtn {
+            display: none;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 16px;
+            border-radius: 5px;
+            background-color: #8B4513;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .arrow-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .arrow-buttons button {
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+            background-color: #8B4513;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #Message-Container {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 24px;
+            color: white;
+            background-color: rgba(0, 128, 0, 0.8);
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        #timer {
+            font-size: 22px;
+            color: black;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+   <div id="usernameDisplay" style="
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 24px;
+        font-weight: bold;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;">
+    </div>
+    <h2 id="greeting" style="color: black; margin-top: 10px;"></h2> 
+
+    <div id="mazeContainer">
+        <canvas id="mazeCanvas"></canvas>
+    </div>
+
+    <div id="controlPanel">
+        <div class="difficulty-buttons">
+            <button onclick="selectDifficulty(10, 50)">Easy</button>
+            <button onclick="selectDifficulty(15, 80)">Medium</button>
+            <button onclick="selectDifficulty(20, 130)">Hard</button>
+        </div>
+        <button id="startBtn" onclick="startGame()">Start Game</button>
+
+        <div id="Message-Container"></div>
+        <div id="timer">Time Left: --:--</div>
+    </div>
+
+    <div class="arrow-buttons">
+        <button></button>  <button id="upBtn">↑</button>  <button></button>
+        <button id="leftBtn">←</button> <button id="downBtn">↓</button> <button id="rightBtn">→</button>
+    </div>
+   <audio id="stepSound" src="https://www.fesliyanstudios.com/play-mp3/2391"></audio>
+<audio id="winSound" src="https://www.fesliyanstudios.com/play-mp3/5268"></audio>
+
+<script>
+let selectedSize = 20, timeLimit = null, player, maze, cellSize, timerInterval, timeLeft, movePath = [], gameOver = false;
+let fruit = null;
+let username = localStorage.getItem("username") || "Player";
+  document.getElementById("greeting").innerText = `hello, ${username}!`; 
+
+function selectDifficulty(size, time) {
+    selectedSize = size;
+    timeLimit = time;
+    document.getElementById("startBtn").style.display = "block";
+}
+
+class Maze {
+    constructor(size) {
+        this.size = size;
+        this.grid = Array.from({ length: size }, () => Array.from({ length: size }, () => ({
+            n: true, s: true, e: true, w: true, visited: false
+        })));
+        this.generateMaze();
+    }
+
+    generateMaze() {
+        const directions = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
+        const opposite = { n: "s", s: "n", e: "w", w: "e" };
+        const stack = [{ x: 0, y: 0 }];
+        this.grid[0][0].visited = true;
+
+        while (stack.length) {
+            const { x, y } = stack[stack.length - 1];
+            const neighbors = shuffle(["n", "s", "e", "w"]).filter(dir => {
+                const nx = x + directions[dir][0];
+                const ny = y + directions[dir][1];
+                return ny >= 0 && ny < this.size && nx >= 0 && nx < this.size && !this.grid[ny][nx].visited;
+            });
+
+            if (neighbors.length) {
+                const dir = neighbors[0];
+                const nx = x + directions[dir][0];
+                const ny = y + directions[dir][1];
+                this.grid[y][x][dir] = false;
+                this.grid[ny][nx][opposite[dir]] = false;
+                this.grid[ny][nx].visited = true;
+                stack.push({ x: nx, y: ny });
+            } else {
+                stack.pop();
+            }
+        }
+    }
+}
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function drawMaze() {
+    const canvas = document.getElementById("mazeCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Adjust canvas size dynamically based on difficulty
+    const baseSize = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.6);
+    canvas.width = baseSize;
+    canvas.height = baseSize;
+    cellSize = canvas.width / selectedSize;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#8B4513";
+    ctx.lineWidth = 2;
+
+    // Draw maze walls
+    maze.grid.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            const xPos = x * cellSize;
+            const yPos = y * cellSize;
+            if (cell.n) ctx.moveTo(xPos, yPos), ctx.lineTo(xPos + cellSize, yPos);
+            if (cell.s) ctx.moveTo(xPos, yPos + cellSize), ctx.lineTo(xPos + cellSize, yPos + cellSize);
+            if (cell.w) ctx.moveTo(xPos, yPos), ctx.lineTo(xPos, yPos + cellSize);
+            if (cell.e) ctx.moveTo(xPos + cellSize, yPos), ctx.lineTo(xPos + cellSize, yPos + cellSize);
+        });
+    });
+    ctx.stroke();
+
+    // Draw player and goal
+    ctx.font = `${cellSize / 1.5}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🥜", (maze.size - 1) * cellSize + cellSize / 2, (maze.size - 1) * cellSize + cellSize / 2);
+    ctx.fillText("🐿", player.x * cellSize + cellSize / 2, player.y * cellSize + cellSize / 2);
+
+    // Draw fruit
+    if (fruit) {
+        ctx.fillText("🍎", fruit.x * cellSize + cellSize / 2, fruit.y * cellSize + cellSize / 2);
+    }
+}
+
+function move(dir) {
+    if (gameOver) return;
+
+    const directions = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
+    const nx = player.x + directions[dir][0];
+    const ny = player.y + directions[dir][1];
+
+    if (nx >= 0 && nx < selectedSize && ny >= 0 && ny < selectedSize && !maze.grid[player.y][player.x][dir]) {
+        player.x = nx;
+        player.y = ny;
+        movePath.push({ x: nx, y: ny });
+        drawMaze();
+        checkFruit();
+        checkWin();
+
+        // Reset and play sound immediately
+        const stepSound = document.getElementById("stepSound");
+        stepSound.currentTime = 2;
+        stepSound.play().catch(() => console.log("Sound play blocked"));
+    }
+}
+
+function checkWin() {
+    if (player.x === selectedSize - 1 && player.y === selectedSize - 1) {
+        clearInterval(timerInterval);
+        document.getElementById("Message-Container").innerText = `🎉 Congratulations, ${username}! You Win!`;
+        document.getElementById("Message-Container").style.display = "block";
+        document.getElementById("winSound").play();
+        gameOver = true;
+        setTimeout(startGame, 5000);
+    }
+}
+
+function checkFruit() {
+    if (fruit && player.x === fruit.x && player.y === fruit.y) {
+        timeLeft += 10; // Increase time when fruit is collected
+        document.getElementById("timer").innerText = `Time Left: ${Math.floor(timeLeft / 60)}:${timeLeft % 60}`;
+        spawnFruit(); // Respawn fruit at a new location
+    }
+}
+
+function spawnFruit() {
+    let x, y;
+    do {
+        x = Math.floor(Math.random() * selectedSize);
+        y = Math.floor(Math.random() * selectedSize);
+    } while ((x === 0 && y === 0) || (x === selectedSize - 1 && y === selectedSize - 1)); // Avoid start & goal positions
+
+    fruit = { x, y };
+}
+
+function startGame() {
+    gameOver = false;
+    timeLeft = timeLimit;
+    document.getElementById("Message-Container").style.display = "none";
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        let minutes = Math.floor(timeLeft / 60);
+        let seconds = timeLeft % 60;
+        document.getElementById("timer").innerText = `Time Left: ${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById("Message-Container").innerText = `⏳ Time's up! Game Over, ${username}!`;
+            document.getElementById("Message-Container").style.display = "block";
+            gameOver = true;
+        }
+        timeLeft--;
+    }, 1000);
+
+    maze = new Maze(selectedSize);
+    player = { x: 0, y: 0 };
+    spawnFruit();
+    drawMaze();
+}
+
+window.addEventListener("keydown", (e) => {
+    e.preventDefault();
+    const moves = { ArrowUp: "n", ArrowDown: "s", ArrowLeft: "w", ArrowRight: "e" };
+    if (moves[e.key]) {
+        move(moves[e.key]);
+    }
+});
+
+document.getElementById("upBtn").onclick = () => move("n");
+document.getElementById("downBtn").onclick = () => move("s");
+document.getElementById("leftBtn").onclick = () => move("w");
+document.getElementById("rightBtn").onclick = () => move("e");
+
+</script>
+</body>
+</html>

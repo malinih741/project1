@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Mind Marvel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .contact-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            margin-top: 15px;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #responseMessage {
+            margin-top: 10px;
+            font-weight: bold;
+            color: green;
+        }
+
+        .team-container {
+            margin-top: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #444;
+            text-align: left;
+            max-width: 400px;
+            margin: 30px auto;
+            background: white;
+            padding: 15px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .team-container h3 {
+            text-align: center;
+            color: #007bff;
+        }
+
+        .team-container p {
+            font-size: 16px;
+            margin: 5px 0;
+            color: #333;
+            font-family: 'Modern no.20';
+        }
+
+        .highlight {
+            color: #ff0000;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="contact-container">
+        <h2>Contact Us</h2>
+        <p>Have questions? Reach out to us!</p>
+        <form id="contactForm">
+            <label for="name">Your Name</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="message">Your Message</label>
+            <textarea id="message" name="message" rows="5" required></textarea>
+
+            <button type="submit">Send Message</button>
+        </form>
+        <p id="responseMessage"></p>
+    </div>
+
+    <div class="team-container">
+        <h3><span class="highlight">Meet Our Game Development Team</span></h3>
+        <p><span class="highlight"><strong>Project Manager:</strong></span> Seetha Lakshmi - The guide of the pack, making sure everything is on track!</p>
+        <p><span class="highlight"><strong>Developer:</strong></span> Hemavathy - The mastermind who brought the game to life with her coding skills!</p>
+        <p><span class="highlight"><strong>Debugger:</strong></span> Deepika - The problem solver who detects and fixes errors effortlessly!</p>
+        <p><span class="highlight"><strong>Implementer:</strong></span> Aarthi - The execution expert who makes sure the game runs seamlessly!</p>
+        <p><span class="highlight"><strong>Designer:</strong></span> Deepigasri - The creative genius who made the game visually stunning!</p>
+        <p><span class="highlight"><strong>Tester:</strong></span> Hemamalini - Ensuring every part of the game runs smoothly without a glitch!</p>
+    </div>
+
+    <script>
+        document.getElementById("contactForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            let name = document.getElementById("name").value;
+            let message = document.getElementById("message").value;
+            let responseMessage = document.getElementById("responseMessage");
+
+            if (name && message) {
+                responseMessage.textContent = "Your message has been sent.";
+                responseMessage.style.color = "green";
+                document.getElementById("contactForm").reset();
+            } else {
+                responseMessage.textContent = "Please fill in all fields.";
+                responseMessage.style.color = "red";
+            }
+        });
+    </script>
+</body>
+</html>
