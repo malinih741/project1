@@ -1,0 +1,458 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Shooter MadLib</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background:url("https://i0.wp.com/screamingbrainstudios.com/wp-content/uploads/2023/01/Blue_Nebula_08-1024x1024-1.png?ssl=1")
+        }
+
+        /* Stars Container */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 1.5s infinite alternate;
+        }
+
+        /* Twinkling effect */
+        @keyframes twinkle {
+            0% {
+                opacity: 0.2;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Randomize stars size and position */
+        .star:nth-child(odd) {
+            animation-duration: 1s;
+        }
+        .star:nth-child(even) {
+            animation-duration: 2s;
+        }
+
+        #board {
+            position: relative;
+            width: 90%;
+            max-width: 500px;
+            height: 500px;
+            background-color: black;
+            border: 2px solid white;
+            overflow: hidden;
+        }
+
+        #jet {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: url("https://www.pngmart.com/files/3/Spaceship-PNG-File.png") no-repeat center;
+            background-size: contain;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .bullets {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background: red;
+        }
+
+        .rocks {
+            position: absolute;
+            width: 100px;
+            height: 50px;
+            background: white;
+            text-align: center;
+            line-height: 50px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        .exit-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: red;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px;
+        }
+
+        .exit-btn:hover {
+            background: darkred;
+        }
+
+        #scoreBoard {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.5em;
+            color: white;
+        }
+
+        #livesBoard {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            font-size: 1.5em;
+            color: white;
+        }
+
+        #question {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2em;
+            color: white;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        #gameOverMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            background: linear-gradient(45deg, red, yellow, blue, green, purple);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .btn {
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            font-size: 24px;
+            text-align: center;
+            line-height: 60px;
+            background: gray;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        @media (max-width: 600px) {
+            .btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+  <h2 id="greeting" style="color: white; margin-top: 10px;"></h2>
+    <div class="stars"></div>
+    <div id="board">
+        <div id="jet"></div>
+    </div>
+    <div id="scoreBoard">Score: 0</div>
+    <div id="livesBoard">💗💗💗</div>
+    <div id="question">What is 2 + 2?</div>
+    <div id="gameOverMessage">GAME OVER!</div>
+
+    <div class="controls">
+        <div class="btn" id="leftBtn">←</div>
+        <div class="btn" id="shootBtn">🔫</div>
+        <div class="btn" id="rightBtn">→</div>
+    </div>
+    
+    <button class="exit-btn" id="exitBtn">Exit</button>
+    
+    <audio id="bulletSound" src="https://www.fesliyanstudios.com/play-mp3/7128"></audio>
+    <audio id="gameOverSound" src="https://www.fesliyanstudios.com/play-mp3/561"></audio>
+    
+
+    <script>
+      const jet = document.getElementById("jet");
+      const board = document.getElementById("board");
+      const scoreElement = document.getElementById("scoreBoard");
+      const livesElement = document.getElementById("livesBoard");
+      const questionElement = document.getElementById("question");
+      const gameOverMessage = document.getElementById("gameOverMessage");
+      const starsContainer = document.querySelector(".stars");
+
+      let isGameOver = false;
+      let score = 0;
+      let lives = 3;
+      let rocks = [];
+      let jetSpeed = 30;
+      let currentQuestion;
+
+       const questions = [
+    { question: "What is 2 + 2?", answer: "4", wrongAnswers: ["3", "5"] },
+    { question: "What is the capital of France?", answer: "Paris", wrongAnswers: ["London", "Berlin"] },
+    { question: "Which planet is the Red Planet?", answer: "Mars", wrongAnswers: ["Venus", "Jupiter"] },
+    { question: "Who wrote 'Hamlet'?", answer: "Shakespeare", wrongAnswers: ["Dickens", "Hemingway"] },
+    { question: "What is the largest ocean?", answer: "Pacific", wrongAnswers: ["Atlantic", "Indian"] },
+    { question: "How many bones in an adult human?", answer: "206", wrongAnswers: ["205", "210"] },
+    { question: "What color is chlorophyll?", answer: "Green", wrongAnswers: ["Blue", "Red"] },
+    { question: "Largest desert in the world?", answer: "Sahara", wrongAnswers: ["Gobi", "Kalahari"] },
+    { question: "Which gas do plants absorb?", answer: "CO2", wrongAnswers: ["Oxygen", "Nitrogen"] },
+    { question: "Who discovered gravity?", answer: "Newton", wrongAnswers: ["Einstein", "Galileo"] },
+    { question: "What is the smallest planet?", answer: "Mercury", wrongAnswers: ["Mars", "Venus"] },
+    { question: "Which element is He?", answer: "Helium", wrongAnswers: ["Hydrogen", "Hassium"] },
+    { question: "Fastest land animal?", answer: "Cheetah", wrongAnswers: ["Lion", "Horse"] },
+    { question: "Tallest mountain?", answer: "Everest", wrongAnswers: ["K2", "Kilimanjaro"] },
+    { question: "Capital of Japan?", answer: "Tokyo", wrongAnswers: ["Seoul", "Beijing"] },
+    { question: "What is the square root of 49?", answer: "7", wrongAnswers: ["6", "8"] },
+    { question: "First US president?", answer: "Washington", wrongAnswers: ["Lincoln", "Jefferson"] },
+    { question: "What is H2O?", answer: "Water", wrongAnswers: ["Oxygen", "Hydrogen"] },
+    { question: "What is 5 + 3?", answer: "8", wrongAnswers: ["7", "9"] },
+    { question: "How many continents are there?", answer: "7", wrongAnswers: ["6", "8"] },
+    { question: "Which ocean is the deepest?", answer: "Pacific", wrongAnswers: ["Atlantic", "Indian"] },
+    { question: "How many teeth does an adult human have?", answer: "32", wrongAnswers: ["30", "34"] },
+    { question: "Which country is famous for pyramids?", answer: "Egypt", wrongAnswers: ["Mexico", "India"] },
+    { question: "Which sport uses a shuttlecock?", answer: "Badminton", wrongAnswers: ["Tennis", "Squash"] },
+    { question: "What is the speed of light?", answer: "299,792 km/s", wrongAnswers: ["150,000 km/s", "500,000 km/s"] },
+    { question: "How many players in a soccer team?", answer: "11", wrongAnswers: ["10", "12"] },
+    { question: "Which metal is liquid at room temperature?", answer: "Mercury", wrongAnswers: ["Gold", "Silver"] },
+    { question: "What is 9 x 8?", answer: "72", wrongAnswers: ["64", "81"] },
+    { question: "Which gas do humans breathe in?", answer: "Oxygen", wrongAnswers: ["Carbon Dioxide", "Nitrogen"] },
+    { question: "Who painted the Mona Lisa?", answer: "Da Vinci", wrongAnswers: ["Van Gogh", "Picasso"] },
+    { question: "Which war ended in 1945?", answer: "WWII", wrongAnswers: ["WWI", "Cold War"] },
+    { question: "What is the hardest natural substance?", answer: "Diamond", wrongAnswers: ["Gold", "Iron"] },
+    { question: "Who invented the telephone?", answer: "Bell", wrongAnswers: ["Edison", "Tesla"] },
+    { question: "Which country has the Great Wall?", answer: "China", wrongAnswers: ["Japan", "India"] },
+    { question: "What is the boiling point of water in Celsius?", answer: "100°C", wrongAnswers: ["90°C", "110°C"] },
+    { question: "What is the longest river in the world?", answer: "Nile", wrongAnswers: ["Amazon", "Yangtze"] },
+    { question: "Which is the only mammal that can fly?", answer: "Bat", wrongAnswers: ["Squirrel", "Eagle"] },
+    { question: "Which country won the 2018 FIFA World Cup?", answer: "France", wrongAnswers: ["Germany", "Brazil"] },
+    { question: "What is the main gas in Earth's atmosphere?", answer: "Nitrogen", wrongAnswers: ["Oxygen", "CO2"] },
+    { question: "Who wrote 'The Great Gatsby'?", answer: "Fitzgerald", wrongAnswers: ["Hemingway", "Orwell"] },
+    { question: "What is the symbol for gold?", answer: "Au", wrongAnswers: ["Ag", "Fe"] },
+    { question: "How many sides does a hexagon have?", answer: "6", wrongAnswers: ["5", "7"] },
+    { question: "Who painted 'Starry Night'?", answer: "Van Gogh", wrongAnswers: ["Picasso", "Da Vinci"] },
+    { question: "Which country gifted the Statue of Liberty?", answer: "France", wrongAnswers: ["England", "Spain"] },
+    { question: "Which element makes up most of the sun?", answer: "Hydrogen", wrongAnswers: ["Helium", "Oxygen"] },
+    { question: "How many hearts does an octopus have?", answer: "3", wrongAnswers: ["1", "4"] },
+    { question: "What is the capital of Canada?", answer: "Ottawa", wrongAnswers:["Toronto", "Montreal"] },
+    { question: "Who was the first man on the Moon?", answer: "Armstrong", wrongAnswers: ["Aldrin", "Gagarin"] },
+    { question: "What is the chemical formula for table salt?", answer: "NaCl", wrongAnswers: ["KCl", "MgCl"] },
+    { question: "What is the capital of Brazil?", answer: "Brasilia", wrongAnswers: ["Rio", "São Paulo"] },
+    { question: "What is 7 x 7?", answer: "49", wrongAnswers: ["42", "56"] },
+    { question: "Which is the smallest country?", answer: "Vatican", wrongAnswers: ["Monaco", "Liechtenstein"] }
+];
+
+      // Generate random stars
+      function generateStars() {
+          for (let i = 0; i < 100; i++) {
+              const star = document.createElement("div");
+              star.classList.add("star");
+              const size = Math.random() * 3 + 1; // Random size between 1 and 3px
+              const posX = Math.random() * 100;  // Random position X
+              const posY = Math.random() * 100;  // Random position Y
+              star.style.width = `${size}px`;
+              star.style.height = `${size}px`;
+              star.style.left = `${posX}%`;
+              star.style.top = `${posY}%`;
+              starsContainer.appendChild(star);
+          }
+      }
+
+      function moveJet(direction) {
+          let leftPos = jet.offsetLeft;
+          if (direction === "left" && leftPos > 0) {
+              jet.style.left = Math.max(leftPos - jetSpeed, 0) + "px";
+          } else if (direction === "right" && leftPos < board.clientWidth - jet.clientWidth) {
+              jet.style.left = Math.min(leftPos + jetSpeed, board.clientWidth - jet.clientWidth) + "px";
+          }
+      }
+
+      function shootBullet() {
+          if (isGameOver) return;
+          
+          const bulletSound = document.getElementById("bulletSound");
+            bulletSound.currentTime = 0;
+            bulletSound.play();
+            
+          const bullet = document.createElement("div");
+          bullet.classList.add("bullets");
+          board.appendChild(bullet);
+          bullet.style.left = jet.offsetLeft + (jet.clientWidth / 2 - 5) + "px";
+          bullet.style.bottom = "60px";
+
+          const bulletInterval = setInterval(() => {
+              if (!bullet.parentNode) {
+                  clearInterval(bulletInterval);
+                  return;
+              }
+
+              bullet.style.bottom = parseInt(bullet.style.bottom) + 10 + "px";
+
+              rocks.forEach((rock, index) => {
+                  if (isCollision(bullet, rock)) {
+                     
+                      if (rock.innerText === currentQuestion.answer) {
+                          score++;
+                          scoreElement.innerText = `Score: ${score}`;
+                          setTimeout(setNewQuestion, 500);
+                      } else {
+                          loseLife();
+                      }
+                      rock.remove();
+                      rocks.splice(index, 1);
+                      bullet.remove();
+                      clearInterval(bulletInterval);
+                  }
+              });
+
+              if (parseInt(bullet.style.bottom) >= board.clientHeight) {
+                  bullet.remove();
+                  clearInterval(bulletInterval);
+              }
+          }, 20);
+      }
+
+      function isCollision(bullet, rock) {
+          const bulletRect = bullet.getBoundingClientRect();
+          const rockRect = rock.getBoundingClientRect();
+          return !(bulletRect.top > rockRect.bottom || bulletRect.bottom < rockRect.top || bulletRect.right < rockRect.left || bulletRect.left > rockRect.right);
+      }
+
+      function loseLife() {
+            if (lives > 0) {
+                lives--;
+                let hearts = "💗".repeat(lives) + "💔".repeat(3 - lives);
+                livesElement.innerText = hearts;
+            }
+            if (lives === 0) {
+                gameOver();
+            }
+        }
+
+      function setNewQuestion() {
+          if (isGameOver) return;
+          currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+          questionElement.innerText = currentQuestion.question;
+          let allAnswers = [currentQuestion.answer, ...currentQuestion.wrongAnswers];
+          allAnswers.sort(() => Math.random() - 0.5);
+          document.querySelectorAll(".rocks").forEach(rock => rock.remove());
+          rocks = [];
+          allAnswers.forEach((answer, index) => generateRock(answer, index));
+      }
+
+      function generateRock(answer, index) {
+          const rock = document.createElement("div");
+          rock.classList.add("rocks");
+          rock.innerText = answer;
+          board.appendChild(rock);
+          rock.style.left = `${index * 120}px`;
+          rock.style.top = "0px";
+          rocks.push(rock);
+          let rockInterval = setInterval(() => {
+            if (isGameOver || !rock.parentNode) {
+                clearInterval(rockInterval);
+                return;
+            }
+
+            rock.style.top = parseInt(rock.style.top) + 2 + "px";
+
+            if (parseInt(rock.style.top) >= board.clientHeight - 50) {
+                if (rock.innerText !== currentQuestion.answer) {
+                    loseLife();
+                } else {
+                    setTimeout(setNewQuestion, 500);
+                }
+                rock.remove();
+                rocks.splice(rocks.indexOf(rock), 1);
+                clearInterval(rockInterval);
+            }
+        }, 50);
+      }
+
+      let username = localStorage.getItem("username") || "Player"; // Retrieve username
+      document.getElementById("greeting").innerText = `Hello, ${username}!`; 
+
+function gameOver() {
+    isGameOver = true;
+    const gameOverSound = document.getElementById("gameOverSound");
+    gameOverSound.currentTime = 0;
+    gameOverSound.play();
+
+    gameOverMessage.innerHTML = `GAME OVER, ${username}!<br> Score: ${score}`;
+    gameOverMessage.style.display = "block";
+
+    setTimeout(restartGame, 5000);
+}
+
+      function restartGame() {
+          score = 0;
+          lives = 3;
+          scoreElement.innerText = `Score: ${score}`;
+          livesElement.innerText = `Lives: ${lives}`;
+          gameOverMessage.style.display = "none";
+          isGameOver = false;
+          document.querySelectorAll(".rocks").forEach(rock => rock.remove());
+          rocks = [];
+          setNewQuestion();
+      }
+      
+document.getElementById("exitBtn").addEventListener("click", function() {
+    isGameOver = true;
+    const gameOverSound = document.getElementById("gameOverSound");
+    gameOverSound.currentTime = 0;
+    gameOverSound.play();
+
+    gameOverMessage.innerHTML = `Final Score: ${score}, ${username}!'<br>`;
+    gameOverMessage.style.display = "block";
+
+    setTimeout(() => {
+        window.location.href = "/home.html"; // Redirect to the home page after 5 seconds
+    }, 5000);
+});
+
+      document.getElementById("leftBtn").addEventListener("click", () => moveJet("left"));
+      document.getElementById("rightBtn").addEventListener("click", () => moveJet("right"));
+      document.getElementById("shootBtn").addEventListener("click", shootBullet);
+
+      // Initialize stars and game
+      generateStars();
+      setNewQuestion();
+    </script>
+</body>
+</html>
